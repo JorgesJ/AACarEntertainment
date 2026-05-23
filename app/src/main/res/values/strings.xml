@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AACarEntertainment</string>
+    <string name="module_music">Música</string>
+    <string name="module_youtube">YouTube</string>
+    <string name="module_browser">Navegador</string>
+    <string name="module_iptv">IPTV</string>
+    <string name="module_radio">Radio</string>
+    <string name="module_gps">GPS</string>
+    <string name="module_mirror">Duplicar</string>
+    <string name="module_settings">Ajustes</string>
+    <string name="module_fuel">Consumos</string>
+    <string name="module_video">Video</string>
+    <string name="car_connected">Conectado al coche</string>
+    <string name="car_disconnected">Desconectado</string>
+    <string name="select_folder">Seleccionar carpeta</string>
+    <string name="no_music_found">No se encontró música en esta carpeta</string>
+    <string name="playback_error">Error de reproducción</string>
+    <string name="permission_required">Permiso necesario</string>
+    <string name="grant_permission">Conceder permiso</string>
+    <string name="loading">Cargando...</string>
+    <string name="open_in_car">Disponible en el coche</string>
+</resources>

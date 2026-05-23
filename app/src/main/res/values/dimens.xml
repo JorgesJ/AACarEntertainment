@@ -1,0 +1,22 @@
+<resources>
+    <!-- Grid de módulos -->
+    <dimen name="module_card_height">140dp</dimen>
+    <dimen name="module_card_corner_radius">16dp</dimen>
+    <dimen name="module_card_margin">8dp</dimen>
+    <dimen name="module_icon_size">48dp</dimen>
+    <dimen name="module_text_size">14sp</dimen>
+
+    <!-- Espaciados generales -->
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_md">16dp</dimen>
+    <dimen name="spacing_lg">24dp</dimen>
+    <dimen name="spacing_xl">32dp</dimen>
+
+    <!-- Header -->
+    <dimen name="header_height">56dp</dimen>
+    <dimen name="header_text_size">18sp</dimen>
+
+    <!-- Player -->
+    <dimen name="player_control_size">48dp</dimen>
+</resources>

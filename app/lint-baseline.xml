@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.5.2" type="baseline" client="gradle" dependencies="false" name="AGP (8.5.2)" variant="fatal" version="8.5.2">
+
+    <issue
+        id="Instantiatable"
+        message="The default constructor must be public in `androidx.car.app.CarAppMetadataHolderService`"
+        errorLine1="            android:name=&quot;androidx.car.app.CarAppMetadataHolderService&quot;"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="139"
+            column="27"/>
+    </issue>
+
+</issues>

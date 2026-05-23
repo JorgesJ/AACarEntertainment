@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="home_icon_radius">10dp</dimen>
+    <dimen name="home_tile_corner">14dp</dimen>
+    <dimen name="home_grid_spacing">6dp</dimen>
+</resources>

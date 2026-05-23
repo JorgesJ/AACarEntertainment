@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="56dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="20dp" android:background="?attr/selectableItemBackground">
+    <TextView android:id="@+id/settings_item_label" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textColor="#F0EEFF" android:textSize="13sp" android:maxLines="1" android:ellipsize="end"/>
+    <TextView android:id="@+id/settings_item_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#8888AA" android:textSize="13sp" android:layout_marginStart="16dp"/>
+</LinearLayout>

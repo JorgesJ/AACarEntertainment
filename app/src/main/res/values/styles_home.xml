@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="HomeGpsDialog" parent="Theme.AppCompat.Dialog.Alert">
+        <item name="android:background">#1A1A24</item>
+        <item name="android:textColor">#F0EEFF</item>
+        <item name="colorAccent">#F97316</item>
+        <item name="android:textColorPrimary">#F0EEFF</item>
+    </style>
+</resources>

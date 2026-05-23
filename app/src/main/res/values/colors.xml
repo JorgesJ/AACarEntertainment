@@ -1,0 +1,36 @@
+<resources>
+    <!-- Base dark -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="background_dark">#FF0A0A0F</color>
+    <color name="background_card">#FF131320</color>
+    <color name="background_surface">#FF1A1A2E</color>
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="text_secondary">#FFB0B0C8</color>
+    <color name="text_hint">#FF606080</color>
+    <color name="divider">#FF252540</color>
+
+    <!-- Primary brand -->
+    <color name="primary">#FF6C63FF</color>
+    <color name="primary_dark">#FF4B44CC</color>
+    <color name="primary_variant">#FF9D97FF</color>
+
+    <!-- Module accent colors -->
+    <color name="accent_youtube">#FFFF0000</color>
+    <color name="accent_browser">#FF00BFFF</color>
+    <color name="accent_iptv">#FFFF6B35</color>
+    <color name="accent_music">#FF1DB954</color>
+    <color name="accent_radio">#FFFF9F1C</color>
+    <color name="accent_gps">#FF4CAF50</color>
+    <color name="accent_mirror">#FFE040FB</color>
+    <color name="accent_settings">#FF78909C</color>
+
+    <!-- Status -->
+    <color name="status_playing">#FF1DB954</color>
+    <color name="status_error">#FFCF6679</color>
+    <color name="status_warning">#FFFFB300</color>
+
+    <!-- Car connection indicator -->
+    <color name="car_connected">#FF1DB954</color>
+    <color name="car_disconnected">#FF606080</color>
+</resources>

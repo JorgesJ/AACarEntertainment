@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="home_bg">#0A0A0C</color>
+    <color name="home_surface">#0F0F12</color>
+    <color name="home_tile_bg">#1A1A24</color>
+    <color name="home_tile_border">#2E2E44</color>
+    <color name="home_text_primary">#F0EEFF</color>
+    <color name="home_text_secondary">#8888AA</color>
+    <color name="home_text_hint">#4A4A66</color>
+    <color name="home_accent_blue">#2F7FFF</color>
+    <color name="home_accent_red">#FF3838</color>
+    <color name="home_accent_purple">#A855F7</color>
+    <color name="home_accent_green">#22C55E</color>
+    <color name="home_accent_amber">#FBBF24</color>
+    <color name="home_accent_cyan">#0EA5E9</color>
+    <color name="home_accent_orange">#F97316</color>
+    <color name="home_accent_gray">#6B7280</color>
+    <color name="home_icon_yt_bg">#26FF3838</color>
+    <color name="home_icon_web_bg">#262F7FFF</color>
+    <color name="home_icon_iptv_bg">#26A855F7</color>
+    <color name="home_icon_music_bg">#2622C55E</color>
+    <color name="home_icon_radio_bg">#26FBBF24</color>
+    <color name="home_icon_mirror_bg">#260EA5E9</color>
+    <color name="home_icon_gps_bg">#26F97316</color>
+    <color name="home_icon_settings_bg">#196B7280</color>
+</resources>

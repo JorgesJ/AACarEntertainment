@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_logo" translatable="false">AACarStream</string>
+    <string name="home_tile_youtube">YouTube</string>
+    <string name="home_tile_youtube_sub">Videos y musica</string>
+    <string name="home_tile_browser">Navegador</string>
+    <string name="home_tile_browser_sub">Web completa</string>
+    <string name="home_tile_iptv">IPTV</string>
+    <string name="home_tile_iptv_sub">Canales en vivo</string>
+    <string name="home_tile_music">Musica</string>
+    <string name="home_tile_music_sub">Local y streaming</string>
+    <string name="home_tile_radio">Radio</string>
+    <string name="home_tile_radio_sub">FM y online</string>
+    <string name="home_tile_mirror">Duplicar</string>
+    <string name="home_tile_mirror_sub">Pantalla y cast</string>
+    <string name="home_tile_gps">GPS</string>
+    <string name="home_tile_gps_sub">Navegacion</string>
+    <string name="home_tile_settings">Ajustes</string>
+    <string name="home_tile_settings_sub">Configuracion</string>
+</resources>

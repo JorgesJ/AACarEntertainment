@@ -1,0 +1,6 @@
+Datos de la keystore nueva:
+
+Archivo: C:\Users\jorso\Documents\AACarEntertainment\aacarentertainment.jks
+Alias: aacarentertainment
+Store password: aacar2026
+Key password: aacar2026
