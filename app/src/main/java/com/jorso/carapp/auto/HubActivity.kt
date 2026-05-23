@@ -24,6 +24,8 @@ class HubActivity : AppCompatActivity() {
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 1001
+        private const val PREFS_NAME = "hub_prefs"
+        private const val KEY_PERMISSIONS_DONE = "permissions_done"
         private val REQUIRED_PERMISSIONS = buildList {
             add(Manifest.permission.ACCESS_FINE_LOCATION)
             add(Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -75,12 +77,19 @@ class HubActivity : AppCompatActivity() {
         handler.post(clockRunnable)
         fetchTemperature()
         handler.postDelayed({ fetchTemperature() }, 600000)
-
-        // Solicitar permisos la primera vez
         requestMissingPermissions()
     }
 
     private fun requestMissingPermissions() {
+        // Si todos los permisos ya están concedidos, no hacer nada
+        if (REQUIRED_PERMISSIONS.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }) return
+
+        // Si ya se pidieron antes, no volver a molestar
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        if (prefs.getBoolean(KEY_PERMISSIONS_DONE, false)) return
+
         val missing = REQUIRED_PERMISSIONS.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
@@ -96,8 +105,10 @@ class HubActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            // Si denegó alguno, volver a pedir la próxima vez que abra la app
-            // No hace falta hacer nada más aquí
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_PERMISSIONS_DONE, true)
+                .apply()
         }
     }
 
@@ -109,7 +120,6 @@ class HubActivity : AppCompatActivity() {
                 var lon: Double? = null
                 var cityName: String? = null
 
-                // Intentar GPS primero
                 try {
                     val location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                         ?: lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
@@ -126,7 +136,6 @@ class HubActivity : AppCompatActivity() {
                     }
                 } catch (e: SecurityException) {}
 
-                // Fallback: IP geolocation
                 if (lat == null || lon == null) {
                     try {
                         val ipUrl = java.net.URL("https://ipapi.co/json/")
@@ -241,11 +250,36 @@ class HubActivity : AppCompatActivity() {
             )
         }
 
+        // Botón SALIR — esquina derecha del header
+        val btnExit = TextView(this).apply {
+            text = "✕ Salir"
+            textSize = 12f
+            setTextColor(0xFFFF5252.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginStart = dp(12)
+            }
+            isClickable = true
+            isFocusable = true
+            background = android.graphics.drawable.RippleDrawable(
+                android.content.res.ColorStateList.valueOf(0x33FF5252),
+                null, null
+            )
+            setOnClickListener {
+                finishAffinity()
+            }
+        }
+
         header.addView(tvTitle)
         header.addView(spacer1)
         header.addView(centerLayout)
         header.addView(spacer2)
         header.addView(tvTemp)
+        header.addView(btnExit)
 
         val divider = View(this).apply {
             setBackgroundColor(0xFF1A237E.toInt())
