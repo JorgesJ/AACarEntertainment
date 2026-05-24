@@ -1,6 +1,7 @@
-﻿package com.jorso.carapp.auto
+package com.jorso.carapp.auto
 
 import android.app.Activity
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
@@ -91,6 +92,7 @@ class IptvCarActivity : AppCompatActivity() {
             )
             setBackgroundColor(0xFF111111.toInt())
         }
+        container.fitsSystemWindows = true
         setContentView(container)
         showHome()
     }
@@ -129,6 +131,11 @@ class IptvCarActivity : AppCompatActivity() {
         }
         getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putString(KEY_PLAYLISTS, arr.toString()).apply()
+    }
+
+    private fun getClipboardText(): String {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        return clipboard.primaryClip?.getItemAt(0)?.text?.toString()?.trim() ?: ""
     }
 
     private fun showHome() {
@@ -198,7 +205,7 @@ class IptvCarActivity : AppCompatActivity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(0xFF1A237E.toInt())
-            setPadding(dp(120), dp(12), dp(16), dp(12))
+            setPadding(headerPadding(), dp(12), dp(16), dp(12))
         }
         header.addView(TextView(this).apply {
             text = "←"; textSize = 20f; setTextColor(0xFFFFFFFF.toInt())
@@ -398,7 +405,7 @@ class IptvCarActivity : AppCompatActivity() {
 
         val leftHeader = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            setBackgroundColor(0xFF1A237E.toInt()); setPadding(dp(120), dp(12), dp(12), dp(12))
+            setBackgroundColor(0xFF1A237E.toInt()); setPadding(headerPadding(), dp(12), dp(12), dp(12))
         }
         leftHeader.addView(TextView(this).apply {
             text = "←"; textSize = 20f; setTextColor(0xFFFFFFFF.toInt()); setPadding(0, 0, dp(8), 0)
@@ -612,44 +619,133 @@ class IptvCarActivity : AppCompatActivity() {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
         root.addView(buildHeader("Añadir Lista IPTV") { showHome() })
+
         val scrollView = ScrollView(this).apply {
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
         }
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; setPadding(dp(24), dp(24), dp(24), dp(24))
         }
+
+        // Recuadro portapapeles en tiempo real
+        val tvClipLabel = TextView(this).apply {
+            text = "📋 Portapapeles"
+            textSize = 12f; setTextColor(0xFF888888.toInt())
+            setPadding(0, 0, 0, dp(4))
+        }
+        val tvClipContent = TextView(this).apply {
+            text = getClipboardText().ifEmpty { "— vacío —" }
+            textSize = 13f
+            setTextColor(if (getClipboardText().isNotEmpty()) 0xFF4FC3F7.toInt() else 0xFF555555.toInt())
+            setBackgroundColor(0xFF1A1A2A.toInt())
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            maxLines = 3
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
+        // Sin listener continuo — solo lee al pulsar los botones para evitar el punto rojo del sistema
+
+        // Botones usar portapapeles como nombre o URL
+        val btnRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(8); bottomMargin = dp(20) }
+        }
+        val btnUseAsName = TextView(this).apply {
+            text = "→ Usar como nombre"
+            textSize = 12f; setTextColor(0xFF81C784.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(10), dp(8), dp(10))
+            isClickable = true; isFocusable = true
+            background = android.graphics.drawable.RippleDrawable(
+                android.content.res.ColorStateList.valueOf(0x3381C784),
+                android.graphics.drawable.ColorDrawable(0xFF1A2A1A.toInt()), null
+            )
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(4) }
+            setOnClickListener {
+                val text = getClipboardText()
+                if (text.isNotEmpty()) { addNameField?.setText(text); showToast("Nombre pegado") }
+                else showToast("Portapapeles vacío")
+            }
+        }
+        val btnUseAsUrl = TextView(this).apply {
+            text = "→ Usar como URL"
+            textSize = 12f; setTextColor(0xFF4FC3F7.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(10), dp(8), dp(10))
+            isClickable = true; isFocusable = true
+            background = android.graphics.drawable.RippleDrawable(
+                android.content.res.ColorStateList.valueOf(0x334FC3F7),
+                android.graphics.drawable.ColorDrawable(0xFF1A2A3A.toInt()), null
+            )
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(4) }
+            setOnClickListener {
+                val text = getClipboardText()
+                if (text.isNotEmpty()) { addUrlField?.setText(text); showToast("URL pegada") }
+                else showToast("Portapapeles vacío")
+            }
+        }
+        btnRow.addView(btnUseAsName)
+        btnRow.addView(btnUseAsUrl)
+
+        content.addView(tvClipLabel)
+        content.addView(tvClipContent)
+        content.addView(btnRow)
+
+        // Campo nombre
         content.addView(TextView(this).apply {
-            text = "Nombre de la lista"; textSize = 13f; setTextColor(0xFF888888.toInt()); setPadding(0, 0, 0, dp(6))
+            text = "Nombre de la lista"; textSize = 13f; setTextColor(0xFF888888.toInt())
+            setPadding(0, 0, 0, dp(6))
         })
         addNameField = EditText(this).apply {
             hint = "Mi lista de IPTV"; setHintTextColor(0xFF555555.toInt()); setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF1E1E1E.toInt()); textSize = 15f; setPadding(dp(16), dp(12), dp(16), dp(12))
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(20) }
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(20) }
         }
         content.addView(addNameField!!)
+
+        // Campo URL
         content.addView(TextView(this).apply {
-            text = "URL de la lista (M3U / M3U8)"; textSize = 13f; setTextColor(0xFF888888.toInt()); setPadding(0, 0, 0, dp(6))
+            text = "URL de la lista (M3U / M3U8)"; textSize = 13f; setTextColor(0xFF888888.toInt())
+            setPadding(0, 0, 0, dp(6))
         })
         addUrlField = EditText(this).apply {
             hint = "https://ejemplo.com/lista.m3u8"; setHintTextColor(0xFF555555.toInt()); setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF1E1E1E.toInt()); textSize = 13f; setPadding(dp(16), dp(12), dp(16), dp(12))
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) }
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(16) }
         }
         content.addView(addUrlField!!)
+
+        // Separador
         content.addView(TextView(this).apply {
             text = "— O —"; textSize = 13f; setTextColor(0xFF555555.toInt()); gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(16); bottomMargin = dp(16) }
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = dp(8); bottomMargin = dp(16)
+            }
         })
+
         content.addView(buildActionButton("📁  Seleccionar archivo M3U del móvil", 0xFF263238.toInt()) {
             filePicker.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*"; addCategory(Intent.CATEGORY_OPENABLE) })
         })
+
         val btnSave = buildActionButton("✓  Guardar lista", 0xFF1A237E.toInt()) { saveNewPlaylist() }
         (btnSave.layoutParams as LinearLayout.LayoutParams).topMargin = dp(24)
         content.addView(btnSave)
+
         scrollView.addView(content); root.addView(scrollView)
         return root
     }
+
+
 
     private fun saveNewPlaylist() {
         val name = addNameField?.text?.toString()?.trim() ?: ""
@@ -664,7 +760,7 @@ class IptvCarActivity : AppCompatActivity() {
     private fun buildHeader(title: String, onBack: () -> Unit): View {
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            setBackgroundColor(0xFF1A237E.toInt()); setPadding(dp(120), dp(12), dp(16), dp(12))
+            setBackgroundColor(0xFF1A237E.toInt()); setPadding(headerPadding(), dp(12), dp(16), dp(12))
         }
         header.addView(TextView(this).apply {
             text = "←"; textSize = 20f; setTextColor(0xFFFFFFFF.toInt()); setPadding(0, 0, dp(12), 0)
@@ -784,4 +880,18 @@ class IptvCarActivity : AppCompatActivity() {
     }
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
+
+    private fun headerPadding(): Int {
+        // En Android Auto el sistema pone un botón nativo a la izquierda que ocupa ~120dp
+        // En el móvil no existe ese botón, usamos padding normal
+        return try {
+            val carContext = Class.forName("androidx.car.app.connection.CarConnection")
+            val conn = carContext.getConstructor(android.content.Context::class.java).newInstance(this)
+            val typeLive = carContext.getMethod("getType").invoke(conn)
+            val type = (typeLive as? androidx.lifecycle.LiveData<*>)?.value as? Int ?: 0
+            if (type != 0) dp(120) else dp(16)
+        } catch (e: Exception) {
+            dp(16)
+        }
+    }
 }

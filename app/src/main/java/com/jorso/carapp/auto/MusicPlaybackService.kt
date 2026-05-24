@@ -3,6 +3,7 @@ package com.jorso.carapp.auto
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -26,6 +27,8 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
         const val ROOT_ID = "music_root"
         const val CHANNEL_ID = "music_playback"
         const val NOTIFICATION_ID = 1001
+        const val PREFS_CONFIG = "app_config"
+        const val KEY_MUSIC_FOLDER = "music_folder"
         var instance: MusicPlaybackService? = null
     }
 
@@ -93,19 +96,58 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
     }
 
     private fun loadSongs() {
-        val musicDir = File("/storage/emulated/0/Music/Musica Remember/Mi Musica")
-        songs = if (musicDir.exists()) {
-            musicDir.listFiles { f ->
-                f.extension.lowercase() in listOf("mp3", "wav", "flac", "m4a", "ogg")
-            }?.map { file ->
-                SongItem(
-                    title = file.nameWithoutExtension,
-                    uri = Uri.fromFile(file),
-                    path = file.absolutePath
-                )
-            }?.sortedBy { it.title } ?: emptyList()
-        } else emptyList()
+        // Leer carpeta desde SharedPreferences (configurada desde MainActivity)
+        val prefs = getSharedPreferences(PREFS_CONFIG, Context.MODE_PRIVATE)
+        val folderUri = prefs.getString(KEY_MUSIC_FOLDER, "") ?: ""
+
+        songs = if (folderUri.isNotEmpty() && folderUri.startsWith("content://")) {
+            // Carpeta seleccionada con el selector de documentos
+            loadSongsFromContentUri(Uri.parse(folderUri))
+        } else if (folderUri.isNotEmpty()) {
+            // Ruta directa (legacy)
+            loadSongsFromFile(File(folderUri))
+        } else {
+            // Sin carpeta configurada — intentar carpeta Music por defecto
+            loadSongsFromFile(File("/storage/emulated/0/Music"))
+        }
         onStateChanged?.invoke()
+    }
+
+    private fun loadSongsFromFile(dir: File): List<SongItem> {
+        if (!dir.exists()) return emptyList()
+        return dir.walkTopDown().filter { file ->
+            file.extension.lowercase() in listOf("mp3", "wav", "flac", "m4a", "ogg")
+        }.map { file ->
+            SongItem(
+                title = file.nameWithoutExtension,
+                uri = Uri.fromFile(file),
+                path = file.absolutePath
+            )
+        }.sortedBy { it.title }.toList()
+    }
+
+    private fun loadSongsFromContentUri(treeUri: Uri): List<SongItem> {
+        val result = mutableListOf<SongItem>()
+        try {
+            val docId = androidx.documentfile.provider.DocumentFile.fromTreeUri(this, treeUri)
+            docId?.listFiles()?.forEach { file ->
+                if (file.isFile && file.name?.substringAfterLast(".")?.lowercase() in
+                    listOf("mp3", "wav", "flac", "m4a", "ogg")) {
+                    result.add(SongItem(
+                        title = file.name?.substringBeforeLast(".") ?: "Sin título",
+                        uri = file.uri,
+                        path = file.uri.toString()
+                    ))
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MusicService", "Error leyendo carpeta: ${e.message}")
+        }
+        return result.sortedBy { it.title }
+    }
+
+    fun reloadSongs() {
+        loadSongs()
     }
 
     fun playSong(index: Int) {
@@ -165,7 +207,7 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
         mediaSession.setMetadata(
             MediaMetadataCompat.Builder()
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, song.title)
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "Mi Musica")
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "AACarEntertainment")
                 .build()
         )
     }

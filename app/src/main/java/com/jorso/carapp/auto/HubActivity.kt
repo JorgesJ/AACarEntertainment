@@ -73,6 +73,7 @@ class HubActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val root = createRootLayout()
+        root.fitsSystemWindows = true
         setContentView(root)
         handler.post(clockRunnable)
         fetchTemperature()
@@ -193,7 +194,7 @@ class HubActivity : AppCompatActivity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = android.view.Gravity.CENTER_VERTICAL
             setBackgroundColor(0xFF1A237E.toInt())
-            setPadding(dp(16), dp(44), dp(16), dp(4))
+            setPadding(dp(16), headerPadding(), dp(16), dp(4))
         }
 
         val tvTitle = TextView(this).apply {
@@ -418,5 +419,17 @@ class HubActivity : AppCompatActivity() {
 
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
+    }
+
+    private fun headerPadding(): Int {
+        return try {
+            val carContext = Class.forName("androidx.car.app.connection.CarConnection")
+            val conn = carContext.getConstructor(android.content.Context::class.java).newInstance(this)
+            val typeLive = carContext.getMethod("getType").invoke(conn)
+            val type = (typeLive as? androidx.lifecycle.LiveData<*>)?.value as? Int ?: 0
+            if (type != 0) dp(44) else dp(12)
+        } catch (e: Exception) {
+            dp(12)
+        }
     }
 }
