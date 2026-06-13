@@ -3,11 +3,13 @@ package com.jorso.carapp.auto
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.drawable.GradientDrawable
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -41,10 +43,12 @@ class HubActivity : AppCompatActivity() {
         }
     }
 
+    // Cada módulo lleva dos colores para el gradiente
     data class Module(
         val titleRes: Int,
         val iconRes: Int,
-        val accentColor: Int,
+        val colorStart: Int,
+        val colorEnd: Int,
         val action: () -> Unit
     )
 
@@ -82,12 +86,10 @@ class HubActivity : AppCompatActivity() {
     }
 
     private fun requestMissingPermissions() {
-        // Si todos los permisos ya están concedidos, no hacer nada
         if (REQUIRED_PERMISSIONS.all {
             ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
         }) return
 
-        // Si ya se pidieron antes, no volver a molestar
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         if (prefs.getBoolean(KEY_PERMISSIONS_DONE, false)) return
 
@@ -107,9 +109,7 @@ class HubActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE) {
             getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                .edit()
-                .putBoolean(KEY_PERMISSIONS_DONE, true)
-                .apply()
+                .edit().putBoolean(KEY_PERMISSIONS_DONE, true).apply()
         }
     }
 
@@ -181,25 +181,29 @@ class HubActivity : AppCompatActivity() {
     }
 
     private fun createRootLayout(): View {
+        // Fondo con degradado vertical oscuro azulado
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xFF111111.toInt())
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(0xFF0D1B2A.toInt(), 0xFF1B263B.toInt(), 0xFF0D1B2A.toInt())
+            )
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
         }
 
+        // ===== HEADER =====
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            setBackgroundColor(0xFF1A237E.toInt())
-            setPadding(dp(16), headerPadding(), dp(16), dp(4))
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(20), dp(14), dp(20), dp(14))
         }
 
         val tvTitle = TextView(this).apply {
-            text = "AACarEntertainment"
-            textSize = 13f
+            text = "🚗 AACarEntertainment"
+            textSize = 15f
             setTextColor(0xFFFFFFFF.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(
@@ -214,24 +218,21 @@ class HubActivity : AppCompatActivity() {
 
         val centerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = android.view.Gravity.CENTER
+            gravity = Gravity.CENTER
         }
-
         tvClock = TextView(this).apply {
             text = "--:--"
-            textSize = 20f
+            textSize = 22f
             setTextColor(0xFFFFFFFF.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
-            gravity = android.view.Gravity.CENTER
+            gravity = Gravity.CENTER
         }
-
         tvDate = TextView(this).apply {
             text = ""
             textSize = 11f
-            setTextColor(0xFF888888.toInt())
-            gravity = android.view.Gravity.CENTER
+            setTextColor(0xFFAAB4C8.toInt())
+            gravity = Gravity.CENTER
         }
-
         centerLayout.addView(tvClock)
         centerLayout.addView(tvDate)
 
@@ -241,38 +242,25 @@ class HubActivity : AppCompatActivity() {
 
         tvTemp = TextView(this).apply {
             text = "--°C"
-            textSize = 13f
+            textSize = 14f
             setTextColor(0xFF4FC3F7.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
-            gravity = android.view.Gravity.END
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
+            gravity = Gravity.END
         }
 
-        // Botón SALIR — esquina derecha del header
+        // Botón salir
         val btnExit = TextView(this).apply {
-            text = "✕ Salir"
-            textSize = 12f
-            setTextColor(0xFFFF5252.toInt())
+            text = "✕"
+            textSize = 18f
+            setTextColor(0xFFFF6B6B.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
-            setPadding(dp(16), dp(8), dp(16), dp(8))
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                marginStart = dp(12)
-            }
+            setPadding(dp(16), dp(8), dp(8), dp(8))
             isClickable = true
             isFocusable = true
             background = android.graphics.drawable.RippleDrawable(
-                android.content.res.ColorStateList.valueOf(0x33FF5252),
-                null, null
+                android.content.res.ColorStateList.valueOf(0x33FF6B6B), null, null
             )
-            setOnClickListener {
-                finishAffinity()
-            }
+            setOnClickListener { finishAffinity() }
         }
 
         header.addView(tvTitle)
@@ -282,42 +270,32 @@ class HubActivity : AppCompatActivity() {
         header.addView(tvTemp)
         header.addView(btnExit)
 
-        val divider = View(this).apply {
-            setBackgroundColor(0xFF1A237E.toInt())
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(1)
-            )
-        }
-
+        // ===== GRID DE MÓDULOS =====
         val recycler = RecyclerView(this).apply {
-            layoutManager = GridLayoutManager(this@HubActivity, 5)
+            layoutManager = GridLayoutManager(this@HubActivity, 3)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
             )
-            setPadding(dp(8), dp(4), dp(8), dp(4))
+            setPadding(dp(12), dp(4), dp(12), dp(12))
             clipToPadding = false
         }
-
         recycler.adapter = ModuleAdapter(getModules())
 
         root.addView(header)
-        root.addView(divider)
         root.addView(recycler)
-
         return root
     }
 
     private fun getModules(): List<Module> = listOf(
-        Module(R.string.module_music, R.drawable.ic_module_music, 0xFF4FC3F7.toInt()) { startModule("music") },
-        Module(R.string.module_radio, R.drawable.ic_module_radio, 0xFF81C784.toInt()) { startModule("radio") },
-        Module(R.string.module_iptv, R.drawable.ic_module_iptv, 0xFFEF9A9A.toInt()) { startModule("iptv") },
-        Module(R.string.module_youtube, R.drawable.ic_module_youtube, 0xFFFF5252.toInt()) { startModule("youtube") },
-        Module(R.string.module_browser, R.drawable.ic_module_browser, 0xFFCE93D8.toInt()) { startModule("browser") },
-        Module(R.string.module_gps, R.drawable.ic_module_gps, 0xFF80DEEA.toInt()) { startModule("gps") },
-        Module(R.string.module_mirror, R.drawable.ic_module_mirror, 0xFFFFF176.toInt()) { startModule("mirror") },
-        Module(R.string.module_settings, R.drawable.ic_module_settings, 0xFFBDBDBD.toInt()) { startModule("settings") },
-        Module(R.string.module_fuel, R.drawable.ic_module_fuel, 0xFFFFB300.toInt()) { startModule("fuel") },
-        Module(R.string.module_video, R.drawable.ic_module_video, 0xFF80CBC4.toInt()) { startModule("video") }
+        Module(R.string.module_music, R.drawable.ic_module_music, 0xFF2196F3.toInt(), 0xFF0D47A1.toInt()) { startModule("music") },
+        Module(R.string.module_radio, R.drawable.ic_module_radio, 0xFF66BB6A.toInt(), 0xFF2E7D32.toInt()) { startModule("radio") },
+        Module(R.string.module_iptv, R.drawable.ic_module_iptv, 0xFFEF5350.toInt(), 0xFFB71C1C.toInt()) { startModule("iptv") },
+        Module(R.string.module_youtube, R.drawable.ic_module_youtube, 0xFFFF5252.toInt(), 0xFFC62828.toInt()) { startModule("youtube") },
+        Module(R.string.module_browser, R.drawable.ic_module_browser, 0xFFAB47BC.toInt(), 0xFF6A1B9A.toInt()) { startModule("browser") },
+        Module(R.string.module_mirror, R.drawable.ic_module_mirror, 0xFFFFCA28.toInt(), 0xFFF57F17.toInt()) { startModule("mirror") },
+        Module(R.string.module_settings, R.drawable.ic_module_settings, 0xFF78909C.toInt(), 0xFF37474F.toInt()) { startModule("settings") },
+        Module(R.string.module_fuel, R.drawable.ic_module_fuel, 0xFFFFB300.toInt(), 0xFFE65100.toInt()) { startModule("fuel") },
+        Module(R.string.module_video, R.drawable.ic_module_video, 0xFF26C6DA.toInt(), 0xFF00838F.toInt()) { startModule("video") }
     )
 
     private fun startModule(module: String) {
@@ -327,7 +305,6 @@ class HubActivity : AppCompatActivity() {
             "radio" -> Intent(this, RadioCarActivity::class.java)
             "music" -> Intent(this, MusicCarActivity::class.java)
             "iptv" -> Intent(this, IptvCarActivity::class.java)
-            "gps" -> Intent(this, GpsCarActivity::class.java)
             "mirror" -> Intent(this, MirrorCarActivity::class.java)
             "fuel" -> Intent(this, FuelActivity::class.java)
             "video" -> Intent(this, VideoCarActivity::class.java)
@@ -342,94 +319,72 @@ class HubActivity : AppCompatActivity() {
         inner class ModuleVH(view: View) : RecyclerView.ViewHolder(view)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ModuleVH {
+            // Tarjeta rectangular con gradiente
             val card = LinearLayout(this@HubActivity).apply {
                 orientation = LinearLayout.VERTICAL
-                gravity = android.view.Gravity.CENTER
-                setPadding(dp(4), dp(12), dp(4), dp(12))
-                layoutParams = ViewGroup.LayoutParams(
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(18), dp(18), dp(18), dp(18))
+                layoutParams = ViewGroup.MarginLayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
+                    dp(105)
+                ).apply {
+                    setMargins(dp(6), dp(6), dp(6), dp(6))
+                }
                 isClickable = true
                 isFocusable = true
-                background = android.graphics.drawable.RippleDrawable(
-                    android.content.res.ColorStateList.valueOf(0x33FFFFFF),
-                    null, null
-                )
             }
 
-            val iconBg = android.widget.FrameLayout(this@HubActivity).apply {
-                layoutParams = LinearLayout.LayoutParams(dp(72), dp(72))
-            }
-
-            val circle = View(this@HubActivity).apply {
-                layoutParams = ViewGroup.LayoutParams(dp(72), dp(72))
-                background = createCircleDrawable(0xFF1E1E2E.toInt())
-            }
-
+            // Icono arriba a la izquierda
             val icon = ImageView(this@HubActivity).apply {
-                layoutParams = android.widget.FrameLayout.LayoutParams(dp(36), dp(36)).apply {
-                    gravity = android.view.Gravity.CENTER
-                }
+                layoutParams = LinearLayout.LayoutParams(dp(38), dp(38))
                 scaleType = ImageView.ScaleType.FIT_CENTER
+                setColorFilter(0xFFFFFFFF.toInt())
             }
 
-            iconBg.addView(circle)
-            iconBg.addView(icon)
-
+            // Texto debajo
             val label = TextView(this@HubActivity).apply {
-                textSize = 10f
+                textSize = 15f
+                setTextColor(0xFFFFFFFF.toInt())
                 setTypeface(null, android.graphics.Typeface.BOLD)
-                gravity = android.view.Gravity.CENTER
-                setPadding(0, dp(6), 0, 0)
+                setPadding(0, dp(12), 0, 0)
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
             }
 
-            card.addView(iconBg)
+            card.addView(icon)
             card.addView(label)
-            card.tag = Pair(icon, label)
-
+            card.tag = Triple(icon, label, card)
             return ModuleVH(card)
         }
 
         override fun onBindViewHolder(holder: ModuleVH, position: Int) {
             val module = modules[position]
-            val (icon, label) = holder.itemView.tag as Pair<*, *>
-            (icon as ImageView).apply {
-                setImageResource(module.iconRes)
-                setColorFilter(module.accentColor)
+            val tag = holder.itemView.tag as Triple<*, *, *>
+            val icon = tag.first as ImageView
+            val label = tag.second as TextView
+
+            icon.setImageResource(module.iconRes)
+            label.text = getString(module.titleRes)
+
+            // Fondo con gradiente y esquinas redondeadas + efecto ripple al pulsar
+            val gradient = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(module.colorStart, module.colorEnd)
+            ).apply {
+                cornerRadius = dp(20).toFloat()
             }
-            (label as TextView).apply {
-                text = getString(module.titleRes)
-                setTextColor(module.accentColor)
-            }
+            holder.itemView.background = android.graphics.drawable.RippleDrawable(
+                android.content.res.ColorStateList.valueOf(0x44FFFFFF),
+                gradient, null
+            )
+
             holder.itemView.setOnClickListener { module.action() }
         }
 
         override fun getItemCount() = modules.size
     }
 
-    private fun createCircleDrawable(color: Int): android.graphics.drawable.Drawable {
-        return android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.OVAL
-            setColor(color)
-        }
-    }
-
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
-    }
-
-    private fun headerPadding(): Int {
-        return try {
-            val carContext = Class.forName("androidx.car.app.connection.CarConnection")
-            val conn = carContext.getConstructor(android.content.Context::class.java).newInstance(this)
-            val typeLive = carContext.getMethod("getType").invoke(conn)
-            val type = (typeLive as? androidx.lifecycle.LiveData<*>)?.value as? Int ?: 0
-            if (type != 0) dp(44) else dp(12)
-        } catch (e: Exception) {
-            dp(12)
-        }
     }
 }

@@ -40,7 +40,6 @@ class FuelActivity : AppCompatActivity() {
     private var fieldLiters: EditText? = null
     private var fieldPrice: EditText? = null
 
-    // Calendario para el selector de fecha
     private val selectedCalendar = Calendar.getInstance()
     private var tvSelectedDate: TextView? = null
 
@@ -58,6 +57,8 @@ class FuelActivity : AppCompatActivity() {
         setContentView(container)
         showHome()
     }
+
+    // ==================== PERSISTENCIA ====================
 
     private fun loadRefuels() {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -93,6 +94,8 @@ class FuelActivity : AppCompatActivity() {
             .edit().putString(KEY_REFUELS, arr.toString()).apply()
     }
 
+    // ==================== NAVEGACIÓN ====================
+
     private fun showHome() {
         screen = "home"
         fieldEuros = null; fieldLiters = null; fieldPrice = null; tvSelectedDate = null
@@ -102,28 +105,32 @@ class FuelActivity : AppCompatActivity() {
 
     private fun showAddRefuel() {
         screen = "add"
-        selectedCalendar.time = Date() // resetear a hoy
+        selectedCalendar.time = Date()
         container.removeAllViews()
         container.addView(buildAddRefuelUI())
     }
+
+    // ==================== HOME UI ====================
 
     private fun buildHomeUI(): View {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(0xFF111111.toInt())
             layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
             )
         }
 
         val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(0xFF1A237E.toInt())
-            setPadding(dp(120), dp(12), dp(16), dp(12))
+            setPadding(dp(16), dp(14), dp(16), dp(14))
         }
         header.addView(TextView(this).apply {
-            text = "←"; textSize = 20f; setTextColor(0xFFFFFFFF.toInt())
-            setPadding(0, 0, dp(12), 0); setOnClickListener { finish() }
+            text = "←"; textSize = 22f; setTextColor(0xFFFFFFFF.toInt())
+            setPadding(0, 0, dp(16), 0); setOnClickListener { finish() }
         })
         header.addView(TextView(this).apply {
             text = "⛽ Consumos"; textSize = 18f; setTextColor(0xFFFFFFFF.toInt())
@@ -131,12 +138,14 @@ class FuelActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
         header.addView(TextView(this).apply {
-            text = "+ Repostar"; textSize = 14f; setTextColor(0xFF4FC3F7.toInt())
+            text = "+ Repostar"; textSize = 15f; setTextColor(0xFF4FC3F7.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(dp(12), dp(8), dp(8), dp(8))
             setOnClickListener { showAddRefuel() }
         })
         root.addView(header)
 
+        // Totales
         val totalLiters = refuels.sumOf { it.liters ?: 0.0 }
         val totalEuros = refuels.sumOf { it.totalEuros ?: 0.0 }
         val avgPrice = if (refuels.any { it.pricePerLiter != null })
@@ -146,7 +155,9 @@ class FuelActivity : AppCompatActivity() {
             orientation = LinearLayout.HORIZONTAL
             setBackgroundColor(0xFF1A237E.toInt())
             setPadding(dp(16), dp(16), dp(16), dp(16))
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            )
         }
         listOf(
             Pair("Total litros", if (totalLiters > 0) String.format("%.2f L", totalLiters) else "--"),
@@ -158,7 +169,7 @@ class FuelActivity : AppCompatActivity() {
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             }
             cell.addView(TextView(this).apply {
-                text = value; textSize = 18f; setTextColor(0xFFFFFFFF.toInt())
+                text = value; textSize = 17f; setTextColor(0xFFFFFFFF.toInt())
                 setTypeface(null, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER
             })
             cell.addView(TextView(this).apply {
@@ -168,6 +179,7 @@ class FuelActivity : AppCompatActivity() {
             totalsCard.addView(cell)
         }
         root.addView(totalsCard)
+
         root.addView(View(this).apply {
             setBackgroundColor(0xFF333333.toInt())
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1))
@@ -204,7 +216,6 @@ class FuelActivity : AppCompatActivity() {
             ).apply { bottomMargin = dp(6) }
         }
 
-        // Izquierda — fecha
         val infoLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -221,14 +232,13 @@ class FuelActivity : AppCompatActivity() {
         }
         item.addView(infoLayout)
 
-        // Centro — litros
+        // Centro — litros en verde
         if (refuel.liters != null) {
             item.addView(TextView(this).apply {
                 text = String.format("%.2f L", refuel.liters)
                 textSize = 15f; setTextColor(0xFF81C784.toInt())
                 setTypeface(null, android.graphics.Typeface.BOLD)
-                gravity = Gravity.CENTER
-                setPadding(dp(12), 0, dp(12), 0)
+                gravity = Gravity.CENTER; setPadding(dp(12), 0, dp(12), 0)
             })
         }
 
@@ -238,13 +248,14 @@ class FuelActivity : AppCompatActivity() {
             textSize = 16f; setTextColor(0xFF4FC3F7.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD); gravity = Gravity.END
         })
-
         item.addView(TextView(this).apply {
             text = "🗑"; textSize = 16f; setPadding(dp(16), 0, 0, 0)
             setOnClickListener { refuels.removeAt(index); saveRefuels(); showHome() }
         })
         return item
     }
+
+    // ==================== ADD REFUEL UI — TARJETA COMPACTA CENTRADA ====================
 
     private fun buildAddRefuelUI(): View {
         val root = LinearLayout(this).apply {
@@ -255,153 +266,156 @@ class FuelActivity : AppCompatActivity() {
             )
         }
 
+        // Header
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(0xFF1A237E.toInt())
-            setPadding(dp(120), dp(12), dp(16), dp(12))
+            setPadding(dp(16), dp(14), dp(16), dp(14))
         }
         header.addView(TextView(this).apply {
-            text = "←"; textSize = 20f; setTextColor(0xFFFFFFFF.toInt())
-            setPadding(0, 0, dp(12), 0); setOnClickListener { showHome() }
+            text = "←"; textSize = 22f; setTextColor(0xFFFFFFFF.toInt())
+            setPadding(0, 0, dp(16), 0); setOnClickListener { showHome() }
         })
         header.addView(TextView(this).apply {
-            text = "Añadir Repostaje"; textSize = 16f; setTextColor(0xFFFFFFFF.toInt())
+            text = "Añadir Repostaje"; textSize = 17f; setTextColor(0xFFFFFFFF.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
         header.addView(TextView(this).apply {
-            text = "✓ Guardar"; textSize = 14f; setTextColor(0xFF69F0AE.toInt())
+            text = "✓ Guardar"; textSize = 15f; setTextColor(0xFF69F0AE.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(dp(12), dp(8), dp(8), dp(8))
             setOnClickListener { saveRefuel() }
         })
         root.addView(header)
 
-        val scrollView = ScrollView(this).apply {
+        // Contenedor que centra la tarjeta — fondo oscuro alrededor
+        val centerWrap = ScrollView(this).apply {
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
         }
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL; setPadding(dp(24), dp(20), dp(24), dp(24))
+        val centerContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+        }
+
+        // TARJETA compacta con ancho máximo — no de extremo a extremo
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(0xFF1A1A2A.toInt())
+            setPadding(dp(20), dp(20), dp(20), dp(20))
+            layoutParams = LinearLayout.LayoutParams(
+                dp(520),  // ancho máximo fijo, queda centrado
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
         }
 
         // ===== SELECTOR DE FECHA =====
-        content.addView(buildSectionHeader("📅 Fecha del repostaje"))
-
-        val dateSelector = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            setBackgroundColor(0xFF1E1E1E.toInt())
-            setPadding(dp(12), dp(8), dp(12), dp(8))
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dp(4) }
-        }
+        card.addView(TextView(this).apply {
+            text = "📅 Fecha"; textSize = 13f; setTextColor(0xFF90CAF9.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD); setPadding(0, 0, 0, dp(8))
+        })
 
         tvSelectedDate = TextView(this).apply {
             text = formatDate(selectedCalendar)
-            textSize = 18f; setTextColor(0xFF4FC3F7.toInt())
+            textSize = 20f; setTextColor(0xFF4FC3F7.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
             gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            setPadding(0, dp(4), 0, dp(10))
         }
+        card.addView(tvSelectedDate!!)
 
-        // Botones día
-        val daySection = buildDateUnit(
-            label = "Día",
-            onMinus = {
-                selectedCalendar.add(Calendar.DAY_OF_MONTH, -1)
-                tvSelectedDate?.text = formatDate(selectedCalendar)
-            },
-            onPlus = {
-                selectedCalendar.add(Calendar.DAY_OF_MONTH, 1)
-                // No permitir fecha futura
-                if (selectedCalendar.after(Calendar.getInstance())) {
-                    selectedCalendar.time = Date()
-                }
-                tvSelectedDate?.text = formatDate(selectedCalendar)
-            }
-        )
+        // Fila de botones de fecha
+        val dateButtons = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(16))
+        }
+        dateButtons.addView(buildDateUnit("Día",
+            { selectedCalendar.add(Calendar.DAY_OF_MONTH, -1); refreshDate() },
+            { addDateCapped(Calendar.DAY_OF_MONTH) }))
+        dateButtons.addView(buildDateUnit("Mes",
+            { selectedCalendar.add(Calendar.MONTH, -1); refreshDate() },
+            { addDateCapped(Calendar.MONTH) }))
+        dateButtons.addView(buildDateUnit("Año",
+            { selectedCalendar.add(Calendar.YEAR, -1); refreshDate() },
+            { addDateCapped(Calendar.YEAR) }))
+        card.addView(dateButtons)
 
-        // Botones mes
-        val monthSection = buildDateUnit(
-            label = "Mes",
-            onMinus = {
-                selectedCalendar.add(Calendar.MONTH, -1)
-                tvSelectedDate?.text = formatDate(selectedCalendar)
-            },
-            onPlus = {
-                selectedCalendar.add(Calendar.MONTH, 1)
-                if (selectedCalendar.after(Calendar.getInstance())) {
-                    selectedCalendar.time = Date()
-                }
-                tvSelectedDate?.text = formatDate(selectedCalendar)
-            }
-        )
+        card.addView(buildCardDivider())
 
-        // Botones año
-        val yearSection = buildDateUnit(
-            label = "Año",
-            onMinus = {
-                selectedCalendar.add(Calendar.YEAR, -1)
-                tvSelectedDate?.text = formatDate(selectedCalendar)
-            },
-            onPlus = {
-                selectedCalendar.add(Calendar.YEAR, 1)
-                if (selectedCalendar.after(Calendar.getInstance())) {
-                    selectedCalendar.time = Date()
-                }
-                tvSelectedDate?.text = formatDate(selectedCalendar)
-            }
-        )
+        // ===== CAMPOS NUMÉRICOS — TODOS VISIBLES, SIN SCROLL ENTRE ELLOS =====
+        card.addView(TextView(this).apply {
+            text = "💶 Dinero gastado (€)"; textSize = 13f; setTextColor(0xFF90CAF9.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD); setPadding(0, dp(4), 0, dp(6))
+        })
+        fieldEuros = buildField("Ej: 60.00")
+        card.addView(fieldEuros!!)
 
-        dateSelector.addView(daySection)
-        dateSelector.addView(monthSection)
-        dateSelector.addView(yearSection)
-        dateSelector.addView(tvSelectedDate!!)
-        content.addView(dateSelector)
+        card.addView(TextView(this).apply {
+            text = "🔢 Litros repostados"; textSize = 13f; setTextColor(0xFF90CAF9.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD); setPadding(0, dp(14), 0, dp(6))
+        })
+        fieldLiters = buildField("Ej: 40.50")
+        card.addView(fieldLiters!!)
 
-        // Botón "Hoy"
-        content.addView(TextView(this).apply {
-            text = "↩ Usar fecha de hoy"
-            textSize = 12f; setTextColor(0xFF888888.toInt()); gravity = Gravity.END
-            setPadding(0, dp(4), 0, 0)
-            setOnClickListener {
-                selectedCalendar.time = Date()
-                tvSelectedDate?.text = formatDate(selectedCalendar)
-            }
+        card.addView(TextView(this).apply {
+            text = "🏷 Precio por litro (€/L) — opcional"; textSize = 13f; setTextColor(0xFF90CAF9.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD); setPadding(0, dp(14), 0, dp(6))
+        })
+        fieldPrice = buildField("Se calcula solo si pones € y L")
+        card.addView(fieldPrice!!)
+
+        card.addView(TextView(this).apply {
+            text = "ℹ️ Todos los campos son opcionales."
+            textSize = 11f; setTextColor(0xFF555555.toInt()); setPadding(0, dp(12), 0, 0)
         })
 
-        // ===== CAMPOS NUMÉRICOS =====
-        content.addView(buildSectionHeader("💶 Dinero total gastado (€)"))
-        fieldEuros = buildField("Ej: 60.00  — lo que marcó el surtidor")
-        content.addView(fieldEuros!!)
+        // Botón guardar grande dentro de la tarjeta también
+        val btnSaveBig = TextView(this).apply {
+            text = "✓  GUARDAR REPOSTAJE"
+            textSize = 15f; setTextColor(0xFFFFFFFF.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER
+            setPadding(dp(20), dp(16), dp(20), dp(16))
+            isClickable = true; isFocusable = true
+            background = android.graphics.drawable.RippleDrawable(
+                android.content.res.ColorStateList.valueOf(0x33FFFFFF),
+                android.graphics.drawable.ColorDrawable(0xFF1A237E.toInt()), null
+            )
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(20) }
+            setOnClickListener { saveRefuel() }
+        }
+        card.addView(btnSaveBig)
 
-        content.addView(buildSectionHeader("🔢 Litros repostados"))
-        fieldLiters = buildField("Ej: 40.50  — litros que pusiste")
-        content.addView(fieldLiters!!)
-
-        content.addView(buildSectionHeader("🏷 Precio por litro (€/L)  — opcional"))
-        fieldPrice = buildField("Ej: 1.489  — se calcula solo si pones € y L")
-        content.addView(fieldPrice!!)
-
-        content.addView(TextView(this).apply {
-            text = "ℹ️ Todos los campos son opcionales. Si introduces € y litros, el precio/litro se calcula automáticamente."
-            textSize = 12f; setTextColor(0xFF555555.toInt()); setPadding(0, dp(8), 0, 0)
-        })
-
-        scrollView.addView(content); root.addView(scrollView)
+        centerContainer.addView(card)
+        centerWrap.addView(centerContainer)
+        root.addView(centerWrap)
         return root
+    }
+
+    private fun addDateCapped(field: Int) {
+        selectedCalendar.add(field, 1)
+        if (selectedCalendar.after(Calendar.getInstance())) {
+            selectedCalendar.time = Date()
+        }
+        refreshDate()
+    }
+
+    private fun refreshDate() {
+        tvSelectedDate?.text = formatDate(selectedCalendar)
     }
 
     private fun buildDateUnit(label: String, onMinus: () -> Unit, onPlus: () -> Unit): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(dp(80), ViewGroup.LayoutParams.WRAP_CONTENT)
-
+            setPadding(dp(8), 0, dp(8), 0)
             addView(TextView(this@FuelActivity).apply {
-                text = label; textSize = 10f; setTextColor(0xFF888888.toInt()); gravity = Gravity.CENTER
+                text = label; textSize = 11f; setTextColor(0xFF888888.toInt()); gravity = Gravity.CENTER
+                setPadding(0, 0, 0, dp(4))
             })
             addView(LinearLayout(this@FuelActivity).apply {
                 orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
-
                 addView(buildArrowButton("◀", onMinus))
                 addView(buildArrowButton("▶", onPlus))
             })
@@ -410,13 +424,22 @@ class FuelActivity : AppCompatActivity() {
 
     private fun buildArrowButton(text: String, onClick: () -> Unit): TextView {
         return TextView(this).apply {
-            this.text = text; textSize = 20f; setTextColor(0xFF4FC3F7.toInt())
-            setPadding(dp(10), dp(8), dp(10), dp(8))
+            this.text = text; textSize = 22f; setTextColor(0xFF4FC3F7.toInt())
+            setPadding(dp(14), dp(10), dp(14), dp(10))
             isClickable = true; isFocusable = true
             background = android.graphics.drawable.RippleDrawable(
                 android.content.res.ColorStateList.valueOf(0x334FC3F7), null, null
             )
             setOnClickListener { onClick() }
+        }
+    }
+
+    private fun buildCardDivider(): View {
+        return View(this).apply {
+            setBackgroundColor(0xFF333344.toInt())
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(1)
+            ).apply { topMargin = dp(8); bottomMargin = dp(16) }
         }
     }
 
@@ -436,35 +459,47 @@ class FuelActivity : AppCompatActivity() {
             showToast("Introduce al menos un dato"); return
         }
 
-        val dateStr = formatDate(selectedCalendar)
-        refuels.add(Refuel(date = dateStr, liters = liters, totalEuros = euros, pricePerLiter = price))
+        refuels.add(Refuel(date = formatDate(selectedCalendar), liters = liters, totalEuros = euros, pricePerLiter = price))
         saveRefuels()
         showToast("Repostaje guardado ✓")
         showHome()
     }
 
-    private fun buildSectionHeader(text: String): TextView {
-        return TextView(this).apply {
-            this.text = text; textSize = 13f; setTextColor(0xFF90CAF9.toInt())
-            setTypeface(null, android.graphics.Typeface.BOLD); setPadding(0, 0, 0, dp(8))
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(16) }
-        }
-    }
-
     private fun buildField(hint: String): EditText {
         return EditText(this).apply {
-            this.hint = hint; setHintTextColor(0xFF444444.toInt())
-            setTextColor(0xFFFFFFFF.toInt()); setBackgroundColor(0xFF1E1E1E.toInt())
-            textSize = 16f
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or
-                    android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
-            keyListener = android.text.method.DigitsKeyListener.getInstance("0123456789.,")
-            setPadding(dp(16), dp(14), dp(16), dp(14))
+            this.hint = hint
+            setHintTextColor(0xFF555555.toInt())
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF252535.toInt())
+            textSize = 18f
+            // Teclado numérico con decimales. El InputFilter de abajo garantiza
+            // que se acepten tanto coma como punto, independientemente del teclado
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or
+                    android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            // InputFilter propio: permite 0-9, una coma o un punto
+            filters = arrayOf(android.text.InputFilter { source, start, end, dest, dstart, dend ->
+                val existing = dest.toString()
+                val builder = StringBuilder()
+                for (i in start until end) {
+                    val c = source[i]
+                    when {
+                        c.isDigit() -> builder.append(c)
+                        (c == '.' || c == ',') -> {
+                            // Solo permitir un separador decimal en total
+                            val hasSeparator = existing.contains('.') || existing.contains(',') ||
+                                    builder.contains(".") || builder.contains(",")
+                            if (!hasSeparator) builder.append(c)
+                        }
+                    }
+                }
+                builder.toString()
+            })
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
+            setSingleLine(true)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dp(4) }
+            )
         }
     }
 
