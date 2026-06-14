@@ -28,25 +28,22 @@ class YoutubeActivity : AppCompatActivity() {
         "static.doubleclick.net", "m.doubleclick.net", "googleads.g.doubleclick.net",
         "securepubads.g.doubleclick.net", "pubads.g.doubleclick.net",
         "imasdk.googleapis.com", "advertising.yahoo.com", "amazon-adsystem.com",
-        "connect.facebook.net", "google-analytics.com", "googletagmanager.com",
-        "yt3.ggpht.com", "youtubei.googleapis.com"
+        "connect.facebook.net", "google-analytics.com", "googletagmanager.com"
     )
 
     private val adUrlPatterns = listOf(
         "/api/stats/ads", "/pagead/", "/ptracking", "&adformat=",
         "/get_midroll_info", "ad_type=", "/youtubei/v1/log_event",
-        "/youtubei/v1/player/ad_break", "ctier=L", "yt_ad=1",
-        "/pagead/lvz", "instream_ad", "youtube.com/api/stats/ads"
+        "/youtubei/v1/player/ad_break", "yt_ad=1", "instream_ad"
     )
 
     private val emptyResponse = WebResourceResponse("text/plain", "utf-8", null)
 
-    // JS de adblock inyectado en cada página
     private val adblockJs = """
         (function() {
-            // CSS para ocultar elementos publicitarios
             var style = document.createElement('style');
             style.innerHTML = [
+                /* Ocultar anuncios */
                 '.ytd-display-ad-renderer,',
                 '.ytd-ad-slot-renderer,',
                 'ytd-ad-slot-renderer,',
@@ -58,70 +55,20 @@ class YoutubeActivity : AppCompatActivity() {
                 '.ytp-ad-overlay-container,',
                 '.ytp-ad-player-overlay,',
                 '.ytp-ad-progress,',
-                '.ytp-ad-progress-list,',
-                '.ytp-ad-skip-button-container,',
-                '.ytm-promoted-video-renderer,',
-                '.ytm-promoted-sparkles-web-renderer,',
-                '#player-ads,',
-                'ad-slot-renderer,',
-                '.ytd-rich-item-renderer:has(ytd-ad-slot-renderer)',
-                '{ display: none !important; }',
-                '.ytp-ad-text { display: none !important; }'
+                '#player-ads',
+                '{ display: none !important; }'
             ].join('');
             document.head.appendChild(style);
-
-            // Auto-skip y auto-click en botones de anuncio
-            var skipInterval = setInterval(function() {
-                // Botones de saltar anuncio
-                var skip = document.querySelector(
-                    '.ytp-skip-ad-button, .ytp-ad-skip-button, .ytp-ad-skip-button-modern, [class*="skip-ad"]'
-                );
-                if (skip) { skip.click(); }
-
-                // Cerrar overlays de anuncio
+            setInterval(function() {
+                var skip = document.querySelector('.ytp-skip-ad-button,.ytp-ad-skip-button,.ytp-ad-skip-button-modern');
+                if (skip) skip.click();
                 var close = document.querySelector('.ytp-ad-overlay-close-button');
-                if (close) { close.click(); }
-
-                // Saltar vídeo de anuncio detectado por clase
+                if (close) close.click();
                 var adVideo = document.querySelector('video.ad-showing');
                 if (adVideo && !adVideo.paused && adVideo.duration) {
                     adVideo.currentTime = adVideo.duration;
                 }
-
-                // Saltar cualquier vídeo corto (<120s) que no sea el principal
-                // Los anuncios suelen ser <60s, el contenido real >60s
-                var allVideos = document.querySelectorAll('video');
-                allVideos.forEach(function(v) {
-                    if (v.duration && v.duration < 120 && !v.paused &&
-                        (document.querySelector('.ad-showing') || 
-                         document.querySelector('.ytp-ad-player-overlay'))) {
-                        v.currentTime = v.duration;
-                    }
-                });
             }, 200);
-
-            // MutationObserver para eliminar anuncios añadidos dinámicamente
-            var observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(m) {
-                    m.addedNodes.forEach(function(node) {
-                        if (node.nodeType === 1) {
-                            var classes = node.className || '';
-                            if (typeof classes === 'string' && (
-                                classes.includes('ad-') || 
-                                classes.includes('-ad') ||
-                                classes.includes('ytp-ad') ||
-                                node.tagName === 'YTD-AD-SLOT-RENDERER' ||
-                                node.tagName === 'YTD-IN-FEED-AD-LAYOUT-RENDERER'
-                            )) {
-                                node.style.display = 'none';
-                            }
-                        }
-                    });
-                });
-            });
-            observer.observe(document.body || document.documentElement, {
-                childList: true, subtree: true
-            });
         })();
     """.trimIndent()
 
@@ -131,7 +78,7 @@ class YoutubeActivity : AppCompatActivity() {
         root.fitsSystemWindows = true
         setContentView(root)
         setupWebView()
-        webView.loadUrl("https://www.youtube.com")
+        webView.loadUrl("https://m.youtube.com")
     }
 
     private fun buildUI(): View {
@@ -171,7 +118,7 @@ class YoutubeActivity : AppCompatActivity() {
                 bottomMargin = dp(16)
                 marginEnd = dp(16)
             }
-            setOnClickListener { webView.loadUrl("https://www.youtube.com") }
+            setOnClickListener { webView.loadUrl("https://m.youtube.com") }
         }
 
         root.addView(webView)
@@ -181,7 +128,6 @@ class YoutubeActivity : AppCompatActivity() {
     }
 
     private fun setupWebView() {
-        // Cookies persistentes
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true)
         cookieManager.setAcceptThirdPartyCookies(webView, true)
@@ -197,8 +143,13 @@ class YoutubeActivity : AppCompatActivity() {
             displayZoomControls = false
             mediaPlaybackRequiresUserGesture = false
             cacheMode = WebSettings.LOAD_DEFAULT
-            // UserAgent desktop — YouTube sirve la versión completa
-            userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            // UserAgent teléfono normal — YouTube sirve m.youtube.com estándar
+            userAgentString = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+            setSupportZoom(false)
+            builtInZoomControls = false
+            displayZoomControls = false
+            loadWithOverviewMode = false
+            useWideViewPort = false
         }
 
         webView.webViewClient = object : WebViewClient() {
@@ -208,25 +159,31 @@ class YoutubeActivity : AppCompatActivity() {
             ): WebResourceResponse? {
                 val url = request?.url?.toString() ?: return null
                 val host = request.url?.host ?: return null
-
-                // Bloquear dominios de anuncios
                 if (adDomains.any { domain -> host.contains(domain) || url.contains(domain) }) {
                     return emptyResponse
                 }
-
-                // Bloquear URLs de anuncios por patrón
                 if (adUrlPatterns.any { pattern -> url.contains(pattern) }) {
                     return emptyResponse
                 }
-
                 return null
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
-                // Guardar cookies
                 CookieManager.getInstance().flush()
-                // Inyectar adblock JS
                 view?.evaluateJavascript(adblockJs, null)
+                // Forzar cuadrícula de 3 columnas reduciendo tamaño de tarjetas
+                view?.evaluateJavascript("""
+                    (function() {
+                        var style = document.createElement('style');
+                        style.innerHTML = [
+                            'ytm-rich-item-renderer { width: 33.33% !important; }',
+                            'ytm-compact-video-renderer { font-size: 12px !important; }',
+                            '.compact-media-item-image { height: 120px !important; }',
+                            'ytm-thumbnail-overlay-time-status-renderer { font-size: 10px !important; }'
+                        ].join('');
+                        document.head.appendChild(style);
+                    })();
+                """.trimIndent(), null)
             }
         }
 

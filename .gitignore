@@ -1,15 +1,20 @@
+﻿# Backups y temporales
+_backups/
+iconos_v3/
+iconos_v2/
+iconos_medio/
+iconos_AACar/
+*.backup_projection
+*.bak_*
+instalar_test.ps1
+
+# Build
+build/
+.gradle/
+*.apk
+*.aab
+
+# Android Studio
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
 local.properties

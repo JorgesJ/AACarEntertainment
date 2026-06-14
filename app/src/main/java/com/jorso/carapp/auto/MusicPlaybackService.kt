@@ -4,9 +4,12 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
@@ -39,6 +42,9 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
     var songs: List<SongItem> = emptyList()
     var currentIndex: Int = -1
     var onStateChanged: (() -> Unit)? = null
+
+    // Cache de artwork por path para no re-extraerlo cada vez
+    private val artworkCache = HashMap<String, Bitmap?>()
 
     data class SongItem(val title: String, val uri: Uri, val path: String)
 
@@ -73,6 +79,7 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
                 override fun onSkipToPrevious() { skipToPrevious() }
                 override fun onSkipToQueueItem(id: Long) { playSong(id.toInt()) }
                 override fun onStop() { stopPlayback() }
+                override fun onSeekTo(pos: Long) { seekTo(pos) }
             })
             isActive = true
         }
@@ -96,18 +103,14 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
     }
 
     private fun loadSongs() {
-        // Leer carpeta desde SharedPreferences (configurada desde MainActivity)
         val prefs = getSharedPreferences(PREFS_CONFIG, Context.MODE_PRIVATE)
         val folderUri = prefs.getString(KEY_MUSIC_FOLDER, "") ?: ""
 
         songs = if (folderUri.isNotEmpty() && folderUri.startsWith("content://")) {
-            // Carpeta seleccionada con el selector de documentos
             loadSongsFromContentUri(Uri.parse(folderUri))
         } else if (folderUri.isNotEmpty()) {
-            // Ruta directa (legacy)
             loadSongsFromFile(File(folderUri))
         } else {
-            // Sin carpeta configurada — intentar carpeta Music por defecto
             loadSongsFromFile(File("/storage/emulated/0/Music"))
         }
         onStateChanged?.invoke()
@@ -129,8 +132,8 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
     private fun loadSongsFromContentUri(treeUri: Uri): List<SongItem> {
         val result = mutableListOf<SongItem>()
         try {
-            val docId = androidx.documentfile.provider.DocumentFile.fromTreeUri(this, treeUri)
-            docId?.listFiles()?.forEach { file ->
+            val docTree = androidx.documentfile.provider.DocumentFile.fromTreeUri(this, treeUri)
+            docTree?.listFiles()?.forEach { file ->
                 if (file.isFile && file.name?.substringAfterLast(".")?.lowercase() in
                     listOf("mp3", "wav", "flac", "m4a", "ogg")) {
                     result.add(SongItem(
@@ -147,6 +150,7 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
     }
 
     fun reloadSongs() {
+        artworkCache.clear()
         loadSongs()
     }
 
@@ -199,6 +203,40 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
         playSong(if (currentIndex <= 0) songs.size - 1 else currentIndex - 1)
     }
 
+    // --- NUEVO: posición, duración y seek para la barra de progreso ---
+    fun getCurrentPosition(): Long = player?.currentPosition ?: 0L
+    fun getDuration(): Long = (player?.duration ?: 0L).coerceAtLeast(0L)
+    fun seekTo(pos: Long) {
+        player?.seekTo(pos)
+        updatePlaybackState()
+        onStateChanged?.invoke()
+    }
+
+    // --- NUEVO: artwork del álbum de la canción actual ---
+    fun getCurrentArtwork(): Bitmap? {
+        if (currentIndex < 0 || currentIndex >= songs.size) return null
+        val song = songs[currentIndex]
+        if (artworkCache.containsKey(song.path)) return artworkCache[song.path]
+        var bmp: Bitmap? = null
+        try {
+            val retriever = MediaMetadataRetriever()
+            if (song.path.startsWith("content://")) {
+                retriever.setDataSource(this, Uri.parse(song.path))
+            } else {
+                retriever.setDataSource(song.path)
+            }
+            val art = retriever.embeddedPicture
+            if (art != null) {
+                bmp = BitmapFactory.decodeByteArray(art, 0, art.size)
+            }
+            retriever.release()
+        } catch (e: Exception) {
+            android.util.Log.e("MusicService", "Error artwork: ${e.message}")
+        }
+        artworkCache[song.path] = bmp
+        return bmp
+    }
+
     val isPlaying get() = player?.isPlaying == true
 
     private fun updateMetadata() {
@@ -207,7 +245,7 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
         mediaSession.setMetadata(
             MediaMetadataCompat.Builder()
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, song.title)
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "AACarEntertainment")
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "Mi Musica")
                 .build()
         )
     }
@@ -227,6 +265,7 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
                     PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
                     PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
                     PlaybackStateCompat.ACTION_STOP or
+                    PlaybackStateCompat.ACTION_SEEK_TO or
                     PlaybackStateCompat.ACTION_SKIP_TO_QUEUE_ITEM
                 )
                 .build()
@@ -245,7 +284,7 @@ class MusicPlaybackService : MediaBrowserServiceCompat() {
         val song = if (currentIndex >= 0) songs[currentIndex].title else "Musica"
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(song)
-            .setContentText("AACarEntertainment")
+            .setContentText("Entretenimiento")
             .setSmallIcon(android.R.drawable.ic_media_play)
             .build()
         startForeground(NOTIFICATION_ID, notification)
