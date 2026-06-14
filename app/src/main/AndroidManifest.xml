@@ -9,12 +9,9 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
@@ -51,7 +48,6 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:appComponentFactory="androidx.core.app.CoreComponentFactory">
 
-        <meta-data android:name="distractionOptimized" android:value="true"/>
         <meta-data android:name="android.max_aspect" android:value="4.0"/>
         <meta-data android:name="androidx.car.app.minCarApiLevel" android:value="7"/>
 
@@ -76,7 +72,6 @@
                 android:gravity="fill"
                 android:minHeight="1dip"
                 android:minWidth="1dip"/>
-            <meta-data android:name="distractionOptimized" android:value="true"/>
             <meta-data android:name="android.max_aspect" android:value="5.0"/>
         </activity>
 
@@ -117,81 +112,70 @@
             android:exported="false"
             android:configChanges="density|layoutDirection|locale|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:theme="@style/Theme.AACarEntertainment"
-            android:parentActivityName=".auto.HubActivity">
-            <meta-data android:name="distractionOptimized" android:value="true"/>
-        </activity>
+            android:parentActivityName=".auto.HubActivity"/>
 
         <activity
             android:name=".auto.BrowserActivity"
             android:exported="false"
             android:configChanges="density|layoutDirection|locale|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:theme="@style/Theme.AACarEntertainment"
-            android:parentActivityName=".auto.HubActivity">
-            <meta-data android:name="distractionOptimized" android:value="true"/>
-        </activity>
+            android:parentActivityName=".auto.HubActivity"/>
 
         <activity
             android:name=".auto.RadioCarActivity"
             android:exported="false"
             android:configChanges="density|layoutDirection|locale|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:theme="@style/Theme.AACarEntertainment"
-            android:parentActivityName=".auto.HubActivity">
-            <meta-data android:name="distractionOptimized" android:value="true"/>
-        </activity>
+            android:parentActivityName=".auto.HubActivity"/>
 
         <activity
             android:name=".auto.MusicCarActivity"
             android:exported="false"
             android:configChanges="density|layoutDirection|locale|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:theme="@style/Theme.AACarEntertainment"
-            android:parentActivityName=".auto.HubActivity">
-            <meta-data android:name="distractionOptimized" android:value="true"/>
-        </activity>
+            android:parentActivityName=".auto.HubActivity"/>
 
         <activity
             android:name=".auto.IptvCarActivity"
             android:exported="false"
             android:configChanges="density|layoutDirection|locale|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:theme="@style/Theme.AACarEntertainment"
-            android:parentActivityName=".auto.HubActivity">
-            <meta-data android:name="distractionOptimized" android:value="true"/>
-        </activity>
+            android:parentActivityName=".auto.HubActivity"/>
 
         <activity
             android:name=".auto.VideoCarActivity"
             android:exported="false"
             android:configChanges="density|layoutDirection|locale|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:theme="@style/Theme.AACarEntertainment"
-            android:parentActivityName=".auto.HubActivity">
-            <meta-data android:name="distractionOptimized" android:value="true"/>
-        </activity>
+            android:parentActivityName=".auto.HubActivity"/>
 
         <activity
             android:name=".auto.FuelActivity"
             android:exported="false"
             android:configChanges="density|layoutDirection|locale|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:theme="@style/Theme.AACarEntertainment"
-            android:parentActivityName=".auto.HubActivity">
-            <meta-data android:name="distractionOptimized" android:value="true"/>
-        </activity>
+            android:parentActivityName=".auto.HubActivity"/>
 
         <activity
             android:name=".auto.GpsCarActivity"
             android:exported="false"
             android:configChanges="density|layoutDirection|locale|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:theme="@style/Theme.AACarEntertainment"
-            android:parentActivityName=".auto.HubActivity">
-            <meta-data android:name="distractionOptimized" android:value="true"/>
-        </activity>
+            android:parentActivityName=".auto.HubActivity"/>
 
         <activity
             android:name=".auto.MirrorCarActivity"
             android:exported="false"
             android:configChanges="density|layoutDirection|locale|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:theme="@style/Theme.AACarEntertainment"
-            android:parentActivityName=".auto.HubActivity">
-            <meta-data android:name="distractionOptimized" android:value="true"/>
-        </activity>
+            android:parentActivityName=".auto.HubActivity"/>
+
+        <activity
+            android:name=".auto.SettingsCarActivity"
+            android:exported="false"
+            android:configChanges="density|layoutDirection|locale|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:theme="@style/Theme.AACarEntertainment"
+            android:parentActivityName=".auto.HubActivity"/>
 
         <service
             android:name=".auto.ScreenMirrorService"

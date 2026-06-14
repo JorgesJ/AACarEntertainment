@@ -1,11 +1,8 @@
 package com.jorso.carapp.auto
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.drawable.GradientDrawable
 import android.location.LocationManager
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -16,34 +13,12 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.jorso.carapp.R
 
 class HubActivity : AppCompatActivity() {
 
-    companion object {
-        private const val PERMISSION_REQUEST_CODE = 1001
-        private const val PREFS_NAME = "hub_prefs"
-        private const val KEY_PERMISSIONS_DONE = "permissions_done"
-        private val REQUIRED_PERMISSIONS = buildList {
-            add(Manifest.permission.ACCESS_FINE_LOCATION)
-            add(Manifest.permission.ACCESS_COARSE_LOCATION)
-            add(Manifest.permission.RECORD_AUDIO)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                add(Manifest.permission.READ_MEDIA_AUDIO)
-                add(Manifest.permission.READ_MEDIA_VIDEO)
-                add(Manifest.permission.READ_MEDIA_IMAGES)
-                add(Manifest.permission.POST_NOTIFICATIONS)
-            } else {
-                add(Manifest.permission.READ_EXTERNAL_STORAGE)
-            }
-        }
-    }
-
-    // Cada módulo lleva dos colores para el gradiente
     data class Module(
         val titleRes: Int,
         val iconRes: Int,
@@ -82,35 +57,6 @@ class HubActivity : AppCompatActivity() {
         handler.post(clockRunnable)
         fetchTemperature()
         handler.postDelayed({ fetchTemperature() }, 600000)
-        requestMissingPermissions()
-    }
-
-    private fun requestMissingPermissions() {
-        if (REQUIRED_PERMISSIONS.all {
-            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
-        }) return
-
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        if (prefs.getBoolean(KEY_PERMISSIONS_DONE, false)) return
-
-        val missing = REQUIRED_PERMISSIONS.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-        if (missing.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, missing.toTypedArray(), PERMISSION_REQUEST_CODE)
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                .edit().putBoolean(KEY_PERMISSIONS_DONE, true).apply()
-        }
     }
 
     private fun fetchTemperature() {
@@ -181,7 +127,6 @@ class HubActivity : AppCompatActivity() {
     }
 
     private fun createRootLayout(): View {
-        // Fondo con degradado vertical oscuro azulado
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable(
@@ -194,15 +139,14 @@ class HubActivity : AppCompatActivity() {
             )
         }
 
-        // ===== HEADER =====
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(20), dp(14), dp(20), dp(14))
+            setPadding(dp(20), headerPadding(), dp(20), dp(14))
         }
 
         val tvTitle = TextView(this).apply {
-            text = "🚗 AACarEntertainment"
+            text = "🚗 Entretenimiento"
             textSize = 15f
             setTextColor(0xFFFFFFFF.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -248,7 +192,6 @@ class HubActivity : AppCompatActivity() {
             gravity = Gravity.END
         }
 
-        // Botón salir
         val btnExit = TextView(this).apply {
             text = "✕"
             textSize = 18f
@@ -270,7 +213,6 @@ class HubActivity : AppCompatActivity() {
         header.addView(tvTemp)
         header.addView(btnExit)
 
-        // ===== GRID DE MÓDULOS =====
         val recycler = RecyclerView(this).apply {
             layoutManager = GridLayoutManager(this@HubActivity, 3)
             layoutParams = LinearLayout.LayoutParams(
@@ -306,6 +248,7 @@ class HubActivity : AppCompatActivity() {
             "music" -> Intent(this, MusicCarActivity::class.java)
             "iptv" -> Intent(this, IptvCarActivity::class.java)
             "mirror" -> Intent(this, MirrorCarActivity::class.java)
+            "settings" -> Intent(this, SettingsCarActivity::class.java)
             "fuel" -> Intent(this, FuelActivity::class.java)
             "video" -> Intent(this, VideoCarActivity::class.java)
             else -> null
@@ -319,7 +262,6 @@ class HubActivity : AppCompatActivity() {
         inner class ModuleVH(view: View) : RecyclerView.ViewHolder(view)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ModuleVH {
-            // Tarjeta rectangular con gradiente
             val card = LinearLayout(this@HubActivity).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER_VERTICAL
@@ -334,14 +276,12 @@ class HubActivity : AppCompatActivity() {
                 isFocusable = true
             }
 
-            // Icono arriba a la izquierda
             val icon = ImageView(this@HubActivity).apply {
                 layoutParams = LinearLayout.LayoutParams(dp(38), dp(38))
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 setColorFilter(0xFFFFFFFF.toInt())
             }
 
-            // Texto debajo
             val label = TextView(this@HubActivity).apply {
                 textSize = 15f
                 setTextColor(0xFFFFFFFF.toInt())
@@ -353,20 +293,19 @@ class HubActivity : AppCompatActivity() {
 
             card.addView(icon)
             card.addView(label)
-            card.tag = Triple(icon, label, card)
+            card.tag = Pair(icon, label)
             return ModuleVH(card)
         }
 
         override fun onBindViewHolder(holder: ModuleVH, position: Int) {
             val module = modules[position]
-            val tag = holder.itemView.tag as Triple<*, *, *>
+            val tag = holder.itemView.tag as Pair<*, *>
             val icon = tag.first as ImageView
             val label = tag.second as TextView
 
             icon.setImageResource(module.iconRes)
             label.text = getString(module.titleRes)
 
-            // Fondo con gradiente y esquinas redondeadas + efecto ripple al pulsar
             val gradient = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
                 intArrayOf(module.colorStart, module.colorEnd)
@@ -382,6 +321,18 @@ class HubActivity : AppCompatActivity() {
         }
 
         override fun getItemCount() = modules.size
+    }
+
+    private fun headerPadding(): Int {
+        return try {
+            val carContext = Class.forName("androidx.car.app.connection.CarConnection")
+            val conn = carContext.getConstructor(android.content.Context::class.java).newInstance(this)
+            val typeLive = carContext.getMethod("getType").invoke(conn)
+            val type = (typeLive as? androidx.lifecycle.LiveData<*>)?.value as? Int ?: 0
+            if (type != 0) dp(44) else dp(12)
+        } catch (e: Exception) {
+            dp(12)
+        }
     }
 
     private fun dp(value: Int): Int {
