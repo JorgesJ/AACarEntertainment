@@ -458,6 +458,15 @@ class VideoCarActivity : AppCompatActivity() {
         android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Recargar la lista por si se añadieron/quitaron vídeos de la carpeta
+        if (getFolder().isNotEmpty()) {
+            videos.clear()
+            loadVideos()
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         audioFocusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
