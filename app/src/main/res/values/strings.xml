@@ -1,6 +1,6 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AACarEntertainment</string>
+    <string name="app_name">Entretenimiento</string>
     <string name="module_music">Música</string>
     <string name="module_youtube">YouTube</string>
     <string name="module_browser">Navegador</string>
