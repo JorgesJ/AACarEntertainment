@@ -1,7 +1,6 @@
 package com.jorso.carapp.auto
 
 import android.app.Activity
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
@@ -25,7 +24,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -74,10 +75,21 @@ class IptvCarActivity : AppCompatActivity() {
     private var leftPanelRef: LinearLayout? = null
 
     private val filePicker = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { uri -> pendingFileUri = uri.toString() }
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {}
+            pendingFileUri = uri.toString()
+            if (addNameField?.text?.toString()?.trim().isNullOrEmpty()) {
+                val fileName = uri.lastPathSegment?.substringAfterLast("/")
+                    ?.substringAfterLast(":")?.substringBeforeLast(".") ?: "Lista M3U"
+                addNameField?.setText(fileName)
+            }
+            showToast("Archivo seleccionado \u2713")
         }
     }
 
@@ -131,11 +143,6 @@ class IptvCarActivity : AppCompatActivity() {
         }
         getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putString(KEY_PLAYLISTS, arr.toString()).apply()
-    }
-
-    private fun getClipboardText(): String {
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        return clipboard.primaryClip?.getItemAt(0)?.text?.toString()?.trim() ?: ""
     }
 
     private fun showHome() {
@@ -618,7 +625,7 @@ class IptvCarActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL; setBackgroundColor(0xFF111111.toInt())
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
-        root.addView(buildHeader("Añadir Lista IPTV") { showHome() })
+        root.addView(buildHeader("A\u00f1adir Lista IPTV") { showHome() })
 
         val scrollView = ScrollView(this).apply {
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
@@ -627,83 +634,21 @@ class IptvCarActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL; setPadding(dp(24), dp(24), dp(24), dp(24))
         }
 
-        // Recuadro portapapeles en tiempo real
-        val tvClipLabel = TextView(this).apply {
-            text = "📋 Portapapeles"
-            textSize = 12f; setTextColor(0xFF888888.toInt())
-            setPadding(0, 0, 0, dp(4))
-        }
-        val tvClipContent = TextView(this).apply {
-            text = getClipboardText().ifEmpty { "— vacío —" }
-            textSize = 13f
-            setTextColor(if (getClipboardText().isNotEmpty()) 0xFF4FC3F7.toInt() else 0xFF555555.toInt())
-            setBackgroundColor(0xFF1A1A2A.toInt())
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            maxLines = 3
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        }
-
-        // Sin listener continuo — solo lee al pulsar los botones para evitar el punto rojo del sistema
-
-        // Botones usar portapapeles como nombre o URL
-        val btnRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(8); bottomMargin = dp(20) }
-        }
-        val btnUseAsName = TextView(this).apply {
-            text = "→ Usar como nombre"
-            textSize = 12f; setTextColor(0xFF81C784.toInt())
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            gravity = Gravity.CENTER
-            setPadding(dp(8), dp(10), dp(8), dp(10))
-            isClickable = true; isFocusable = true
-            background = android.graphics.drawable.RippleDrawable(
-                android.content.res.ColorStateList.valueOf(0x3381C784),
-                android.graphics.drawable.ColorDrawable(0xFF1A2A1A.toInt()), null
-            )
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(4) }
-            setOnClickListener {
-                val text = getClipboardText()
-                if (text.isNotEmpty()) { addNameField?.setText(text); showToast("Nombre pegado") }
-                else showToast("Portapapeles vacío")
-            }
-        }
-        val btnUseAsUrl = TextView(this).apply {
-            text = "→ Usar como URL"
-            textSize = 12f; setTextColor(0xFF4FC3F7.toInt())
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            gravity = Gravity.CENTER
-            setPadding(dp(8), dp(10), dp(8), dp(10))
-            isClickable = true; isFocusable = true
-            background = android.graphics.drawable.RippleDrawable(
-                android.content.res.ColorStateList.valueOf(0x334FC3F7),
-                android.graphics.drawable.ColorDrawable(0xFF1A2A3A.toInt()), null
-            )
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(4) }
-            setOnClickListener {
-                val text = getClipboardText()
-                if (text.isNotEmpty()) { addUrlField?.setText(text); showToast("URL pegada") }
-                else showToast("Portapapeles vacío")
-            }
-        }
-        btnRow.addView(btnUseAsName)
-        btnRow.addView(btnUseAsUrl)
-
-        content.addView(tvClipLabel)
-        content.addView(tvClipContent)
-        content.addView(btnRow)
+        // Texto explicativo
+        content.addView(TextView(this).apply {
+            text = "A\u00f1ade una lista de dos formas: con un nombre y su URL, o seleccionando un archivo M3U del m\u00f3vil."
+            textSize = 13f; setTextColor(0xFF888888.toInt()); setPadding(0, 0, 0, dp(20))
+        })
 
         // Campo nombre
         content.addView(TextView(this).apply {
-            text = "Nombre de la lista"; textSize = 13f; setTextColor(0xFF888888.toInt())
-            setPadding(0, 0, 0, dp(6))
+            text = "Nombre de la lista"; textSize = 13f; setTextColor(0xFF90CAF9.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD); setPadding(0, 0, 0, dp(6))
         })
         addNameField = EditText(this).apply {
             hint = "Mi lista de IPTV"; setHintTextColor(0xFF555555.toInt()); setTextColor(0xFFFFFFFF.toInt())
-            setBackgroundColor(0xFF1E1E1E.toInt()); textSize = 15f; setPadding(dp(16), dp(12), dp(16), dp(12))
+            setBackgroundColor(0xFF1E1E1E.toInt()); textSize = 15f; setPadding(dp(16), dp(14), dp(16), dp(14))
+            setSingleLine(true)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dp(20) }
@@ -712,13 +657,14 @@ class IptvCarActivity : AppCompatActivity() {
 
         // Campo URL
         content.addView(TextView(this).apply {
-            text = "URL de la lista (M3U / M3U8)"; textSize = 13f; setTextColor(0xFF888888.toInt())
-            setPadding(0, 0, 0, dp(6))
+            text = "URL de la lista (M3U / M3U8)"; textSize = 13f; setTextColor(0xFF90CAF9.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD); setPadding(0, 0, 0, dp(6))
         })
         addUrlField = EditText(this).apply {
             hint = "https://ejemplo.com/lista.m3u8"; setHintTextColor(0xFF555555.toInt()); setTextColor(0xFFFFFFFF.toInt())
-            setBackgroundColor(0xFF1E1E1E.toInt()); textSize = 13f; setPadding(dp(16), dp(12), dp(16), dp(12))
+            setBackgroundColor(0xFF1E1E1E.toInt()); textSize = 13f; setPadding(dp(16), dp(14), dp(16), dp(14))
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
+            setSingleLine(true)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dp(16) }
@@ -727,17 +673,19 @@ class IptvCarActivity : AppCompatActivity() {
 
         // Separador
         content.addView(TextView(this).apply {
-            text = "— O —"; textSize = 13f; setTextColor(0xFF555555.toInt()); gravity = Gravity.CENTER
+            text = "\u2014 O \u2014"; textSize = 13f; setTextColor(0xFF555555.toInt()); gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 topMargin = dp(8); bottomMargin = dp(16)
             }
         })
 
-        content.addView(buildActionButton("📁  Seleccionar archivo M3U del móvil", 0xFF263238.toInt()) {
-            filePicker.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*"; addCategory(Intent.CATEGORY_OPENABLE) })
+        // Botón seleccionar archivo
+        content.addView(buildActionButton("\ud83d\udcc1  Seleccionar archivo M3U del m\u00f3vil", 0xFF263238.toInt()) {
+            filePicker.launch(arrayOf("*/*"))
         })
 
-        val btnSave = buildActionButton("✓  Guardar lista", 0xFF1A237E.toInt()) { saveNewPlaylist() }
+        // Botón guardar
+        val btnSave = buildActionButton("\u2713  Guardar lista", 0xFF1A237E.toInt()) { saveNewPlaylist() }
         (btnSave.layoutParams as LinearLayout.LayoutParams).topMargin = dp(24)
         content.addView(btnSave)
 
@@ -745,16 +693,22 @@ class IptvCarActivity : AppCompatActivity() {
         return root
     }
 
-
-
     private fun saveNewPlaylist() {
         val name = addNameField?.text?.toString()?.trim() ?: ""
         val url = addUrlField?.text?.toString()?.trim() ?: ""
         val fileUri = pendingFileUri
-        if (name.isEmpty()) { showToast("Introduce un nombre"); return }
-        if (url.isEmpty() && fileUri == null) { showToast("Introduce una URL o selecciona archivo"); return }
-        playlists.add(if (fileUri != null) Playlist(name, fileUri, true) else Playlist(name, url))
-        savePlaylists(); showToast("Lista '$name' guardada"); showHome()
+        if (url.isEmpty() && fileUri == null) {
+            showToast("Introduce una URL o selecciona un archivo M3U"); return
+        }
+        val finalName = if (name.isEmpty()) {
+            if (fileUri != null) "Lista M3U" else "Lista IPTV"
+        } else name
+        if (fileUri != null) {
+            playlists.add(Playlist(finalName, fileUri, true))
+        } else {
+            playlists.add(Playlist(finalName, url, false))
+        }
+        savePlaylists(); showToast("Lista '$finalName' guardada \u2713"); showHome()
     }
 
     private fun buildHeader(title: String, onBack: () -> Unit): View {
@@ -800,7 +754,18 @@ class IptvCarActivity : AppCompatActivity() {
 
     private fun initPlayer() {
         requestAudioFocus()
-        player = ExoPlayer.Builder(this).build()
+        // DataSource HTTP con User-Agent tipo reproductor IPTV.
+        // Muchos servidores (Xtream/zngma, etc.) rechazan el User-Agent por defecto
+        // de ExoPlayer pero aceptan el de VLC/IPTV.
+        val httpFactory = DefaultHttpDataSource.Factory()
+            .setUserAgent("Lavf/60.16.100")
+            .setAllowCrossProtocolRedirects(true)
+            .setConnectTimeoutMs(15000)
+            .setReadTimeoutMs(15000)
+        val mediaSourceFactory = DefaultMediaSourceFactory(httpFactory)
+        player = ExoPlayer.Builder(this)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .build()
         player?.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 runOnUiThread {
