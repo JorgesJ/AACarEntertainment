@@ -1,4 +1,4 @@
-﻿plugins {
+plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 }
@@ -11,8 +11,8 @@ android {
         applicationId = "com.jorso.carapp"
         minSdk = 29
         targetSdk = 36
-        versionCode = 24
-        versionName = "1.1.0"
+        versionCode = 27
+        versionName = "1.2.0"
     }
 
     signingConfigs {
@@ -77,13 +77,3 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
-
-
-
-
-
-
-
-
-
-
