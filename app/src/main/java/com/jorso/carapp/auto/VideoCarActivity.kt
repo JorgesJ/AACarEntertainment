@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import java.io.File
 
@@ -37,6 +38,14 @@ class VideoCarActivity : AppCompatActivity() {
     private var videos = mutableListOf<VideoItem>()
     private var currentIndex = -1
     private val videoButtons = mutableListOf<LinearLayout>()
+
+    // Control de aspecto del video
+    private var videoWidth = 0
+    private var videoHeight = 0
+    // Modos: 0=Ajustar (respeta proporcion), 1=Llenar (recorta), 2=Estirar (deforma)
+    private var aspectMode = 0
+    private var btnAspect: TextView? = null
+    private lateinit var surfaceContainer: FrameLayout
 
     private lateinit var container: FrameLayout
     private lateinit var surfaceView: SurfaceView
@@ -179,8 +188,10 @@ class VideoCarActivity : AppCompatActivity() {
         scrollView.addView(videoList); root.addView(scrollView)
 
         // SurfaceView oculto requerido por el player
+        surfaceContainer = FrameLayout(this).apply { visibility = View.GONE }
         surfaceView = SurfaceView(this).apply { visibility = View.GONE }
-        root.addView(surfaceView)
+        surfaceContainer.addView(surfaceView)
+        root.addView(surfaceContainer)
 
         // Placeholders para variables requeridas
         tvNowPlaying = TextView(this)
@@ -247,9 +258,15 @@ class VideoCarActivity : AppCompatActivity() {
             setBackgroundColor(0xFF000000.toInt())
         }
 
+        // Contenedor que centra el surface y respeta la proporcion del video
+        surfaceContainer = FrameLayout(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER
+            )
+        }
         surfaceView = SurfaceView(this).apply {
             layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER
             )
         }
         surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
@@ -257,6 +274,7 @@ class VideoCarActivity : AppCompatActivity() {
             override fun surfaceChanged(holder: SurfaceHolder, f: Int, w: Int, h: Int) {}
             override fun surfaceDestroyed(holder: SurfaceHolder) { player?.setVideoSurface(null) }
         })
+        surfaceContainer.addView(surfaceView)
 
         val infoOverlay = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
@@ -300,8 +318,11 @@ class VideoCarActivity : AppCompatActivity() {
         tvNowPlaying = tvCurrentVideo
         controls.addView(btnPrev); controls.addView(btnPlayPause)
         controls.addView(btnNext); controls.addView(tvCurrentVideo)
+        // Boton de aspecto
+        btnAspect = buildControlButton("\u2922") { cycleAspectMode() }
+        controls.addView(btnAspect)
 
-        rightPanel.addView(surfaceView); rightPanel.addView(infoOverlay); rightPanel.addView(controls)
+        rightPanel.addView(surfaceContainer); rightPanel.addView(infoOverlay); rightPanel.addView(controls)
         root.addView(leftPanel); root.addView(rightPanel)
         container.addView(root)
     }
@@ -360,6 +381,11 @@ class VideoCarActivity : AppCompatActivity() {
             override fun onPlayerError(error: PlaybackException) {
                 runOnUiThread { tvStatus.text = "Error al reproducir"; progressBar.visibility = View.GONE }
             }
+            override fun onVideoSizeChanged(videoSize: VideoSize) {
+                videoWidth = videoSize.width
+                videoHeight = videoSize.height
+                runOnUiThread { applyAspectMode() }
+            }
         })
     }
 
@@ -373,6 +399,7 @@ class VideoCarActivity : AppCompatActivity() {
         player?.stop(); player?.clearMediaItems()
         player?.setMediaItem(MediaItem.fromUri(video.uri))
         player?.prepare(); player?.play()
+        surfaceContainer.post { applyAspectMode() }
     }
 
     private fun loadVideos() {
@@ -452,6 +479,62 @@ class VideoCarActivity : AppCompatActivity() {
         videoButtons.forEachIndexed { index, btn ->
             btn.setBackgroundColor(if (index == currentIndex) 0xFF1A2A3A.toInt() else 0xFF222222.toInt())
         }
+    }
+
+    private fun cycleAspectMode() {
+        aspectMode = (aspectMode + 1) % 3
+        val label = when (aspectMode) {
+            0 -> "Ajustar"
+            1 -> "Llenar"
+            else -> "Estirar"
+        }
+        showToast("Modo: $label")
+        applyAspectMode()
+    }
+
+    private fun applyAspectMode() {
+        if (!::surfaceContainer.isInitialized) return
+        if (videoWidth <= 0 || videoHeight <= 0) return
+        val parent = surfaceContainer
+        val pw = parent.width
+        val ph = parent.height
+        if (pw == 0 || ph == 0) {
+            parent.post { applyAspectMode() }
+            return
+        }
+        val videoRatio = videoWidth.toFloat() / videoHeight.toFloat()
+        val parentRatio = pw.toFloat() / ph.toFloat()
+
+        val lp = surfaceView.layoutParams as FrameLayout.LayoutParams
+        when (aspectMode) {
+            0 -> {
+                // Ajustar: respeta proporcion, todo el video visible (letterbox)
+                if (videoRatio > parentRatio) {
+                    lp.width = pw
+                    lp.height = (pw / videoRatio).toInt()
+                } else {
+                    lp.height = ph
+                    lp.width = (ph * videoRatio).toInt()
+                }
+            }
+            1 -> {
+                // Llenar: respeta proporcion pero recorta para cubrir toda la pantalla
+                if (videoRatio > parentRatio) {
+                    lp.height = ph
+                    lp.width = (ph * videoRatio).toInt()
+                } else {
+                    lp.width = pw
+                    lp.height = (pw / videoRatio).toInt()
+                }
+            }
+            else -> {
+                // Estirar: ocupa todo deformando
+                lp.width = pw
+                lp.height = ph
+            }
+        }
+        lp.gravity = Gravity.CENTER
+        surfaceView.layoutParams = lp
     }
 
     private fun showToast(msg: String) {
